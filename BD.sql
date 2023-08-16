@@ -1,286 +1,569 @@
--- USE master
--- DROP DATABASE _SAC_
--- CREATE DATABASE _SAC_
+/*
+USE [master];
+DECLARE @kill varchar(8000) = '';  
+SELECT @kill = @kill + 'kill ' + CONVERT(varchar(5), session_id) + ';'  
+FROM sys.dm_exec_sessions
+WHERE database_id  = db_id('_SAC_')
+EXEC(@kill);
+GO
+
+USE master
+GO
+DROP DATABASE _SAC_
+GO
+CREATE DATABASE _SAC_
+GO
+*/
 
 USE _SAC_
+GO
 
-CREATE TABLE CatTipoUsuario (
-    IdTipoUsr       INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    TipoUsr         VARCHAR(50)     NOT NULL,
-    Descrip         VARCHAR(100)    NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
+CREATE TABLE CatTipoUsuario
+(
+    IdTipoUsr INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    TipoUsr VARCHAR(50) NOT NULL,
+    Descrip VARCHAR(100) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
 
-INSERT INTO CatTipoUsuario (TipoUsr, Descrip) VALUES 
+CREATE TABLE CatUsuarios
+(
+    IdUsuario INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdTipoUsuario INT NOT NULL FOREIGN KEY REFERENCES CatTipoUsuario(IdTipoUsr),
+    Usr VARCHAR(50) NOT NULL,
+    Pwd VARCHAR(50) NOT NULL,
+    ApellidoP VARCHAR(50) NOT NULL,
+    ApellidoM VARCHAR(50) NOT NULL,
+    Nombre VARCHAR(50) NOT NULL,
+    Email VARCHAR(50) NULL,
+    Tel VARCHAR(50) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    UsrModi VARCHAR(50) NULL,
+    FecModi DATETIME NULL
+)
+GO
+
+CREATE TABLE CatTipoProducto
+(
+    IdTipoProducto INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    Categoria VARCHAR(50) NOT NULL,
+    TipoProducto VARCHAR(50) NOT NULL,
+    Descrip VARCHAR(100) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE CatProductos
+(
+    IdProducto INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdTipoProducto INT NOT NULL FOREIGN KEY REFERENCES CatTipoProducto(IdTipoProducto),
+    Sku VARCHAR(50) NULL,
+    Marca VARCHAR(50) NULL,
+    Modelo VARCHAR(50) NULL,
+    Variante VARCHAR(50) NULL,
+    NombreComercial VARCHAR(50) NOT NULL,
+    Descrip VARCHAR(100) NULL,
+    ExistenciaGlobal INT NOT NULL DEFAULT 1,
+    EnExibicion INT NOT NULL DEFAULT 0,
+    PuntoReorden INT NOT NULL DEFAULT 0,
+    PrecioCompra DECIMAL(10,2) NOT NULL,
+    PrecioVenta DECIMAL(10,2) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+) 
+GO
+
+CREATE TRIGGER TrgCatProductos ON CatProductos FOR INSERT, UPDATE AS 
+BEGIN
+    DECLARE @IdProducto INT
+    DECLARE @Sku VARCHAR(50)
+
+    SET NOCOUNT ON
+    SELECT @IdProducto = IdProducto, @Sku = Sku
+    FROM inserted
+
+    IF @Sku = '' OR @Sku IS NULL BEGIN
+        UPDATE CP SET CP.Sku = 
+            CONCAT(CT.Categoria, '.', COALESCE(CP.Variante, 'AUTOSKU'), '.', CP.IdProducto) 
+        FROM CatProductos CP
+            LEFT JOIN CatTipoProducto CT
+            ON CT.IdTipoProducto = CP.IdTipoProducto 
+        WHERE CP.IdProducto = @IdProducto
+    END
+END
+GO
+
+CREATE TABLE RelCombos
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdProdPadre INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    IdProdHijo INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE DefMicas
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdProducto INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    Procesada BIT NOT NULL DEFAULT 0,
+    Material VARCHAR(50) NOT NULL,
+    SphDesde DECIMAL(10,2) NOT NULL,
+    SphHasta DECIMAL(10,2) NOT NULL,
+    CylDesde DECIMAL(10,2) NOT NULL,
+    CylHasta DECIMAL(10,2) NOT NULL,
+    AddDesde DECIMAL(10,2) NULL,
+    AddHasta DECIMAL(10,2) NULL,
+    Escala DECIMAL(10,2) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE DefArmazones
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdProducto INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    Material VARCHAR(50) NOT NULL,
+    Talla VARCHAR(50) NOT NULL,
+    Color VARCHAR(50) NOT NULL,
+    Genero VARCHAR(50) NOT NULL,
+    Med_A DECIMAL(10,2) NOT NULL,
+    Med_B DECIMAL(10,2) NOT NULL,
+    Med_ED DECIMAL(10,2) NOT NULL,
+    Med_DBL DECIMAL(10,2) NOT NULL,
+    Med_Varilla DECIMAL(10,2) NOT NULL,
+    Med_Puente DECIMAL(10,2) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE CatColecciones
+(
+    IdColeccion INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    Coleccion VARCHAR(50) NOT NULL,
+    Descrip VARCHAR(100) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE RelColecciones
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdColeccion INT NOT NULL FOREIGN KEY REFERENCES CatColecciones(IdColeccion),
+    IdProducto INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE CatConvenios
+(
+    IdConvenio INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    Convenio VARCHAR(50) NOT NULL,
+    Descrip VARCHAR(100) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE CatClientes
+(
+    IdCliente INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdConvenio INT NOT NULL FOREIGN KEY REFERENCES CatConvenios(IdConvenio) DEFAULT 1,
+    ApellidoP VARCHAR(50) NOT NULL,
+    ApellidoM VARCHAR(50) NOT NULL,
+    Nombre VARCHAR(50) NOT NULL,
+    Tel VARCHAR(50) NOT NULL,
+    Email VARCHAR(50) NOT NULL,
+    Direccion VARCHAR(50) NOT NULL,
+    Colonia VARCHAR(50) NOT NULL,
+    Ciudad VARCHAR(50) NOT NULL,
+    Estado VARCHAR(50) NOT NULL,
+    CP VARCHAR(50) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+GO
+
+CREATE TABLE RegDiagnosticoCliente
+(
+    IdDiagnostico INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdCliente INT NOT NULL FOREIGN KEY REFERENCES CatClientes(IdCliente),
+    SphOD DECIMAL(10,2) NOT NULL,
+    CylOD DECIMAL(10,2) NOT NULL,
+    EjeOD DECIMAL(10,2) NOT NULL,
+    AddOD DECIMAL(10,2) NULL,
+    AltOD DECIMAL(10,2) NULL,
+    SphOI DECIMAL(10,2) NOT NULL,
+    CylOI DECIMAL(10,2) NOT NULL,
+    EjeOI DECIMAL(10,2) NOT NULL,
+    AddOI DECIMAL(10,2) NULL,
+    AltOI DECIMAL(10,2) NULL,
+    DistPupilar DECIMAL(10,2) NULL,
+    AltPantoscopica DECIMAL(10,2) NULL,
+    Observaciones VARCHAR(100) NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+
+CREATE TABLE RegVentas
+(
+    IdVenta INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdCliente INT NOT NULL FOREIGN KEY REFERENCES CatClientes(IdCliente),
+    IdDiagnostico INT NOT NULL FOREIGN KEY REFERENCES RegDiagnosticoCliente(IdDiagnostico),
+    EsquemaVenta VARCHAR(50) NOT NULL,
+    EstatusVenta VARCHAR(50) NOT NULL,
+    EsquemaPago VARCHAR(50) NOT NULL,
+    EstatusPago VARCHAR(50) NOT NULL,
+    MetodoPago VARCHAR(50) NOT NULL,
+    Diferido BIT NOT NULL DEFAULT 0,
+    RangoDiferido VARCHAR(50) NULL,
+    PagosDiferidos INT NULL,
+    FecVenta DATETIME NOT NULL DEFAULT (GETDATE()),
+    FecLiquidado DATETIME NULL,
+    FecEntrega DATETIME NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+
+CREATE TABLE DetVentas
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdVenta INT NOT NULL FOREIGN KEY REFERENCES RegVentas(IdVenta),
+    IdProducto INT NOT NULL FOREIGN KEY REFERENCES CatProductos(IdProducto),
+    SkuProducto VARCHAR(50) NOT NULL,
+    Cantidad INT NOT NULL,
+    PrecioUnitario DECIMAL(10,2) NOT NULL,
+    PorcDescuento DECIMAL(10,2) NOT NULL,
+    PrecioDescuento DECIMAL(10,2) NOT NULL,
+    PrecioTotal DECIMAL(10,2) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+
+CREATE TABLE RegVentaPagos
+(
+    IdReg INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    IdVenta INT NOT NULL FOREIGN KEY REFERENCES RegVentas(IdVenta),
+    Monto DECIMAL(10,2) NOT NULL,
+    PagoNo INT NOT NULL,
+    PagosFaltantes INT NOT NULL,
+    FecPago DATETIME NOT NULL DEFAULT (GETDATE()),
+    Activo BIT NOT NULL DEFAULT 1,
+    FecAlta DATETIME NOT NULL DEFAULT (GETDATE()),
+    UsrAlta VARCHAR(50) NOT NULL DEFAULT ('SYSTEM'),
+    FecModi DATETIME NULL,
+    UsrModi VARCHAR(50) NULL
+)
+
+INSERT INTO CatTipoUsuario
+    (TipoUsr, Descrip)
+VALUES
     ('ADMINISTRADOR', 'ADMINISTRADOR DEL SISTEMA'),
     ('VENTAS / OPTOMETRISTA', 'USUARIO DE VENTAS / OPTOMETRISTA'),
     ('CLIENTE', 'CLIENTE')
 GO
 
-CREATE TABLE CatUsuarios (
-    IdUsuario       INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdTipoUsuario   INT             NOT NULL    FOREIGN KEY REFERENCES CatTipoUsuario(IdTipoUsr),
-    Usr             VARCHAR(50)     NOT NULL,
-    Pwd             VARCHAR(50)     NOT NULL,
-    ApellidoP       VARCHAR(50)     NOT NULL,
-    ApellidoM       VARCHAR(50)     NOT NULL,
-    Nombre          VARCHAR(50)     NOT NULL,
-    Email           VARCHAR(50)     NULL,
-    Tel             VARCHAR(50)     NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    UsrModi         VARCHAR(50)     NULL,
-    FecModi         DATETIME        NULL
-) GO
-
-INSERT INTO CatUsuarios (IdTipoUsuario, Usr, Pwd, ApellidoP, ApellidoM, Nombre, Email, Tel) VALUES 
+INSERT INTO CatUsuarios
+    (IdTipoUsuario, Usr, Pwd, ApellidoP, ApellidoM, Nombre, Email, Tel)
+VALUES
     (1, 'webmaster', '1234', 'García', 'Trejo', 'Michelle Ulises', 'contacto.gatm@gmail.com', '5519000933'),
     (2, 'ventas1', '1234', 'Molina', 'Mercado', 'Sarah', 'ventas@sonoptika.com', '5614870905')
 GO
 
-CREATE TABLE CatTipoProducto(
-    IdTipoProducto  INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    Categoria       VARCHAR(50)     NOT NULL,
-    TipoProducto    VARCHAR(50)     NOT NULL,
-    Descrip         VARCHAR(100)    NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-INSERT INTO CatTipoProducto(Categoria, TipoProducto, Descrip) VALUES 
-    ('ARMAZON', 'Armazones Oftálmicos', 'Lentes con diseño especial para tus lentes oftálmicas'),
-    ('ARMAZON', 'Armazones Solares', 'Lentes para lucir en ambientes de sol'),
-    ('MICA', 'Micas Solares', 'Micas para proteger tus ojos de la luz solar'),
-    ('MICA', 'Micas Oftálmicas', 'Micas especializadas para tu salud visual'),
-    ('TRATAMIENTO', 'Antireflejante', 'Tratamiento de antireflejo'),
-    ('TRATAMIENTO', 'Polarizado', 'Tratamiento polarizado'),
-    ('TRATAMIENTO', 'Entintado', 'Perzonaliza tus micas con un color a tu gusto'),
-    ('SERVICIO', 'Biselado', 'Servicio de corte y montaje de micas sobre el armazon'),
-    ('SERVICIO', 'Mantenimiento', 'Servicio de mantenimiento al armazon'),
-    ('CONSUMIBLE', 'Estuche', 'Estuche para guardar tus lentes'),
-    ('CONSUMIBLE', 'Paño', 'Paño para limpiar tus lentes'),
-    ('CONSUMIBLE', 'Cordón', 'Cordón para colgar tus lentes'),
-    ('CONSUMIBLE', 'Líquido', 'Líquido para limpiar tus lentes')
+INSERT INTO CatTipoProducto
+    (Categoria, TipoProducto, Descrip)
+VALUES
+    ('ARM', 'Armazones Oftálmicos', 'Lentes con diseño especial para tus lentes oftálmicas'),
+    ('ARM', 'Armazones Solares', 'Lentes para lucir en ambientes de sol'),
+    ('MIC', 'Micas Solares', 'Micas para proteger tus ojos de la luz solar'),
+    ('MIC', 'Micas Oftálmicas', 'Micas especializadas para tu salud visual'),
+    ('TRA', 'Antireflejante', 'Tratamiento de antireflejo'),
+    ('TRA', 'Polarizado', 'Tratamiento polarizado'),
+    ('TRA', 'Entintado', 'Perzonaliza tus micas con un color a tu gusto'),
+    ('SER', 'Biselado', 'Servicio de corte y montaje de micas sobre el armazon'),
+    ('SER', 'Mantenimiento', 'Servicio de mantenimiento al armazon'),
+    ('CON', 'Estuche', 'Estuche para guardar tus lentes'),
+    ('CON', 'Paño', 'Paño para limpiar tus lentes'),
+    ('CON', 'Cordón', 'Cordón para colgar tus lentes'),
+    ('CON', 'Líquido', 'Líquido para limpiar tus lentes')
 GO
 
-CREATE TABLE CatProductos (
-    IdProducto      INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdTipoProducto  INT             NOT NULL    FOREIGN KEY REFERENCES CatTipoProducto(IdTipoProducto),
-    Sku             VARCHAR(50)     NOT NULL,
-    Marca           VARCHAR(50)     NOT NULL,
-    Modelo          VARCHAR(50)     NOT NULL,
-    NombreComercial VARCHAR(50)     NOT NULL,
-    Descrip         VARCHAR(100)    NULL,
-    ExistenciaGlobal INT            NOT NULL    DEFAULT 1,
-    EnExibicion     INT             NOT NULL    DEFAULT 0,
-    PuntoReorden    INT             NOT NULL    DEFAULT 0,
-    PrecioCompra    DECIMAL(10,2)   NOT NULL,
-    PrecioVenta     DECIMAL(10,2)   NOT NULL,
-    Precio          DECIMAL(10,2)   NOT NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
+INSERT INTO CatProductos
+    (IdTipoProducto, Sku, Marca, Modelo, Variante, NombreComercial, ExistenciaGlobal, EnExibicion, PuntoReorden, PrecioCompra, PrecioVenta)
+VALUES
+    (1, 'VOR.5001H.0A01.51', 'ADIDAS', 'OR5001-H', 'A01', 'ADIDAS OR5001-H (A01)', 1, 0, 0, 846.8, 2000),
+    (1, 'VOR.5002H.0055.55', 'ADIDAS', 'OR5002-H', '055', 'ADIDAS OR5002-H (055)', 1, 0, 0, 846.8, 2000),
+    (1, 'VSP.05002.0002.55', 'ADIDAS', 'SP5005', '002', 'ADIDAS SP5005 (002)', 1, 0, 0, 705.28, 2000),
+    (1, 'VAE.0AG25.0BLK.55', 'AEREOPOSTALE', 'AE0AG25', 'BLK', 'AEREOPOSTALE AE0AG25 (BLK)', 1, 0, 0, 662.94, 1800),
+    (1, 'VAE.0AM18.0BLU.54', 'AEREOPOSTALE', 'AE0AM18', 'BLU', 'AEREOPOSTALE AE0AM18 (BLU)', 1, 0, 0, 662.94, 1800),
+    (1, 'VAE.0AP19.0BLK.55', 'AEREOPOSTALE', 'AE0AP19', 'BLK', 'AEREOPOSTALE AE0AP19 (BLK)', 1, 0, 0, 662.94, 1800),
+    (1, 'VAE.MOR05.0BLK.54', 'AEREOPOSTALE', 'AEMOR05', 'BLK', 'AEREOPOSTALE AEMOR05 (BLK)', 1, 0, 0, 662.94, 1800),
+    (1, 'VAE.MOR02.0GLD.54', 'AEREOPOSTALE', 'AE MOR02', 'GLD', 'AEREOPOSTALE AE MOR02 (GLD)', 1, 0, 0, 883.92, 1800),
+    (1, 'VER.AR246.BLK.53', 'aVER', 'AR246', 'BLK', 'aVER AR246 (BLK)', 1, 0, 0, 98.6, 400),
+    (1, 'VER.AR252.MRR.49', 'aVER', 'AR252', 'MRR', 'aVER AR252 (MRR)', 1, 0, 0, 98.6, 400),
+    (1, 'VBI.23373.DMI.52', 'BELIEVE', 'BL23373', 'DMI', 'BELIEVE BL23373 (DMI)', 1, 0, 0, 505.76, 1200),
+    (1, 'VBI.23373.BRG.52', 'BELIEVE', 'BL23373', 'BRG', 'BELIEVE BL23373 (BRG)', 1, 0, 0, 505.76, 1200),
+    (1, 'VBI.81612.BLU.54', 'BELIEVE', 'BL81612', 'BLU', 'BELIEVE BL81612 (BLU)', 1, 0, 0, 505.76, 1200),
+    (1, 'VBE.BS041.VM2.54', 'BENETTON', 'BS041', 'VM2', 'BENETTON BS041 (VM2)', 1, 0, 0, 348, 900),
+    (1, 'VBE.BS042.VM3.53', 'BENETTON', 'BS042', 'VM3', 'BENETTON BS042 (VM3)', 3, 0, 0, 348, 900),
+    (1, 'VBE.BS044.VM1.53', 'BENETTON', 'BS044', 'VM1', 'BENETTON BS044 (VM1)', 32, 0, 0, 348, 900),
+    (1, 'VBE.BS045.VM2.54', 'BENETTON', 'BS045', 'VM2', 'BENETTON BS045 (VM2)', 2, 0, 0, 348, 900),
+    (1, 'VBE.BS045.VM1.54', 'BENETTON', 'BS045', 'VM1', 'BENETTON BS045 (VM1)', 1, 0, 0, 348, 900),
+    (1, 'VBE.BS073.VM2.53', 'BENETTON', 'BS073', 'VM2', 'BENETTON BS073 (VM2)', 14, 0, 0, 348, 900),
+    (1, 'VBE.BS077.VM1.52', 'BENETTON', 'BS077', 'VM1', 'BENETTON BS077 (VM1)', 15, 0, 0, 348, 900),
+    (1, 'VBE.BS078.VM2.53', 'BENETTON', 'BS078', 'VM2', 'BENETTON BS078 (VM2)', 2, 0, 0, 348, 900),
+    (1, 'VBE.BS078.VM1.53', 'BENETTON', 'BS078', 'VM1', 'BENETTON BS078 (VM1)', 1, 0, 0, 348, 900),
+    (1, 'VBE.BS079.VM2.53', 'BENETTON', 'BS079', 'VM2', 'BENETTON BS079 (VM2)', 4, 0, 0, 348, 900),
+    (1, 'CAF.08023.0C1.142', 'CAFFSEN', '8023', 'C1', 'CAFFSEN 8023 (C1)', 1, 0, 0, 98.6, 600),
+    (1, 'VCO.0CL04.0PUR.54', 'CAPA DE OZONO', 'COCL04', 'PUR', 'CAPA DE OZONO COCL04 (PUR)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.0VH01.0GRY.55', 'CAPA DE OZONO', 'COVH01', 'GRY', 'CAPA DE OZONO COVH01 (GRY)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.BRN09.0RED.54', 'CAPA DE OZONO', 'COBRN09', 'RED', 'CAPA DE OZONO COBRN09 (RED)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.JOO14.RGLD.55', 'CAPA DE OZONO', 'COJOO14', 'GLD', 'CAPA DE OZONO COJOO14 (GLD)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.JOO15.0BLU.53', 'CAPA DE OZONO', 'COJOO15', 'CLU', 'CAPA DE OZONO COJOO15 (CLU)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.MOR06.0CRS.54', 'CAPA DE OZONO', 'COMOR06', 'CRS', 'CAPA DE OZONO COMOR06 (CRS)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.MOS02.0PNK.55', 'CAPA DE OZONO', 'COMOR02', 'PNK', 'CAPA DE OZONO COMOR02 (PNK)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.NEW10.0DMI.53', 'CAPA DE OZONO', 'CONEW10', 'DMI', 'CAPA DE OZONO CONEW10 (DMI)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.POL11.0DMI.56', 'CAPA DE OZONO', 'COPOL11', 'DMI', 'CAPA DE OZONO COPOL11 (DMI)', 1, 0, 0, 473.78, 1200),
+    (1, 'VCO.EMP18.RGLD.55', 'CAPA DE OZONO', 'COEMP18', 'DMI', 'CAPA DE OZONO COEMP18 (DMI)', 1, 0, 0, 473.78, 1200),
+    (2, 'SHE.00689.09GW.54', 'CAROLINA HERRERA', 'SHE 0689', '9GW', 'CAROLINA HERRERA SHE 0689 (9GW)', 1, 0, 0, 1503.36, 3700),
+    (2, 'SHE.00689.0700.54', 'CAROLINA HERRERA', 'SHE 0689', '700', 'CAROLINA HERRERA SHE 0689 (700)', 1, 0, 0, 1503.36, 3700),
+    (1, 'VLE.B2237.DMI.52', 'CLOE', 'LEB2237', 'DMI', 'CLOE LEB2237 (DMI)', 1, 0, 0, 472.12, 1800),
+    (1, 'VLE.B2256.DMI.54', 'CLOE', 'LEB2256', 'DMI', 'CLOE LEB2256 (DMI)', 1, 0, 0, 472.12, 1800),
+    (1, 'VLE.81591.SLV.53', 'CLOE', 'LE81591', 'SLV', 'CLOE LE81591 (SLV)', 1, 0, 0, 597.4, 1800),
+    (1, 'VLE.G2348.BLK.54', 'CLOE', 'LEG2348', 'BLK', 'CLOE LEG2348 (BLK)', 1, 0, 0, 597.4, 1800),
+    (1, 'VLE.81601.BLK.55', 'CLOE', 'LE81601', 'BLK', 'CLOE LE81601 (BLK)', 1, 0, 0, 814.32, 1800),
+    (1, 'CMA.7M6809.CM2.53', 'CMARK', 'V227M6804', 'CM2', 'CMARK V227M6804 (CM2)', 1, 0, 0, 249.4, 1200),
+    (1, 'CMA.7M6806.CM1.52', 'CMARK', 'V227M6806', 'CM1', 'CMARK V227M6806 (CM1)', 1, 0, 0, 249.4, 1200),
+    (1, 'CMA.7M6808.CM3.50', 'CMARK', 'V227M6808', 'CM3', 'CMARK V227M6808 (CM3)', 1, 0, 0, 249.4, 1200),
+    (1, 'CMA.7M6801.CM4.54', 'CMARK', 'V227M6801', 'CM4', 'CMARK V227M6801 (CM4)', 1, 0, 0, 249.4, 1200),
+    (1, 'CMA.V3304.CM4.48', 'CMARK', 'V3304', 'CM4', 'CMARK V3304 (CM4)', 1, 0, 0, 324.8, 1200),
+    (1, 'CMA.V3301.CM5.51', 'CMARK', 'V3301', 'CM5', 'CMARK V3301 (CM5)', 1, 0, 0, 324.8, 1200),
+    (1, 'COA.00611.0C4.51', 'COOA', 'BICO-611', 'C4', 'COOA BICO-611 (C4)', 1, 0, 0, 98.6, 900),
+    (1, 'COA.00606.0C2.52', 'COOA', 'BICO-606', 'C2', 'COOA BICO-606 (C2)', 1, 0, 0, 98.6, 900),
+    (1, 'COA.00607.0C2.55', 'COOA', 'BICO-607', '0C2', 'COOA BICO-607 (0C2)', 1, 0, 0, 114.84, 900),
+    (1 , '0CB.MT008.0C3.53', 'COOL BEAR', 'MT-008', '0C3', 'COOL BEAR MT-008 (0C3)', 1, 0, 0, 121.8, 900),
+    (1, 'MEN.88014.0C4.56', 'COOL MEN', '88014', '0C4', 'COOL MEN 88014 (0C4)', 1, 0, 0, 162.4, 900),
+    (1, 'MEN.M3141.0C8.55', 'COOL MEN', 'CM3141', '0C8', 'COOL MEN CM3141 (0C8)', 1, 0, 0, 241.28, 900),
+    (2, 'SDS.00041.50J.54', 'DIESEEL', 'DL0041', '50J', 'DIESEEL DL0041 (50J)', 1, 0, 0, 578.84, 550),
+    (1, 'VDL.04233.GRY.53', 'DILAURO', 'DL4233', 'GLD', 'DILAURO DL4233 (GLD)', 1, 0, 0, 98.6, 900),
+    (1, 'VDL.05003.BRN.54', 'DILAURO', 'DL5023', 'GRY', 'DILAURO DL5023 (GRY)', 1, 0, 0, 98.6, 900),
+    (1, 'VDL.00171.LBN.46', 'DILAURO', 'DL5003', 'BRN', 'DILAURO DL5003 (BRN)', 1, 0, 0, 98.6, 900),
+    (1, 'VDL.05023.GLD.50', 'DILAURO', 'DL0171', 'LBN', 'DILAURO DL0171 (LBN)', 1, 0, 0, 98.6, 900),
+    (1, 'VDY.0021B.0BLK.53', 'DOROTHY GAYNOR', 'DY0021B', 'BLK', 'DOROTHY GAYNOR DY0021B (BLK)', 1, 0, 0, 543.75, 1400),
+    (1, 'ENO.06051.0C5.55', 'ENO', 'ENO6051', '0C5', 'ENO ENO6051 (0C5)', 1, 0, 0, 153.12, 900),
+    (1, 'ENO.0WD17.0C3.54', 'ENO', 'WD17', '0C3', 'ENO WD17 (0C3)', 1, 0, 0, 153.12, 900),
+    (1, 'VFA.S1531.BLK.50', 'FAMFORIA', 'S1531', 'BLK', 'FAMFORIA S1531 (BLK)', 1, 0, 0, 98.6, 700),
+    (1, 'FSH.W6001.0C1.55', 'FASHION', 'W6001', 'C1', 'FASHION W6001 (C1)', 1, 0, 0, 98.6, 550),
+    (1, 'GEM.SUN166.0C1.50', 'GEMMA', 'SUN-166', '0C1', 'GEMMA SUN-166 (0C1)', 1, 0, 0, 266.8, 1500),
+    (1, NULL, 'GENERICO', 'D35455 C4', 'C4', 'GENERICO D35455 C4 (C4)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35455 C5', 'C5', 'GENERICO D35455 C5 (C5)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35455 C2', 'C2', 'GENERICO D35455 C2 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35384.0C1.99', 'GENERICO', 'LR35384 C1', 'C1', 'GENERICO LR35384 C1 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35384.0C2.99', 'GENERICO', 'LR35385 C2', 'C2', 'GENERICO LR35385 C2 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35384.0C3.99', 'GENERICO', 'LR35386 C3', 'C3', 'GENERICO LR35386 C3 (C3)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35509.0C1.99', 'GENERICO', 'LR35509', 'C1', 'GENERICO LR35509 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35509.0C2.99', 'GENERICO', NULL, 'C2', 'GENERICO  (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35509.0C3.99', 'GENERICO', NULL, 'C3', 'GENERICO  (C3)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35509.0C5.99', 'GENERICO', NULL, 'C5', 'GENERICO  (C5)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35451', 'C2', 'GENERICO D35451 (C2)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C4', 'GENERICO  (C4)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35510', 'C3', 'GENERICO D35510 (C3)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C4', 'GENERICO  (C4)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C2', 'GENERICO  (C2)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C3', 'GENERICO  (C3)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C4', 'GENERICO  (C4)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35523', 'C1', 'GENERICO D35523 (C1)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C4', 'GENERICO  (C4)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C5', 'GENERICO  (C5)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35370.0C1.99', 'GENERICO', 'LR35370', 'C1', 'GENERICO LR35370 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35370.0C2.99', 'GENERICO', NULL, 'C2', 'GENERICO  (C2)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'B7039', 'C3', 'GENERICO B7039 (C3)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', NULL, 'C4', 'GENERICO  (C4)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35516.0C2.99', 'GENERICO', 'D35516', 'C2', 'GENERICO D35516 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35516.0C3.99', 'GENERICO', NULL, 'C3', 'GENERICO  (C3)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35525.0C1.99', 'GENERICO', 'LR35525', 'C1', 'GENERICO LR35525 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35456.0C4.99', 'GENERICO', 'LR35456', 'C4', 'GENERICO LR35456 (C4)', 1, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'LR35380', 'C1', 'GENERICO LR35380 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35453.0C1.99', 'GENERICO', 'LR35453', 'C1', 'GENERICO LR35453 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VLR.35368.0C2.99', 'GENERICO', 'LR35368', 'C2', 'GENERICO LR35368 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VGU.01984.002.56', 'GUESS', 'GU1984', '002', 'GUESS GU1984 (002)', 1, 0, 0, 902.48, 2400),
+    (1, 'VGU.01985.002.53', 'GUESS', 'GU1985', '002', 'GUESS GU1985 (002)', 1, 0, 0, 902.48, 2400),
+    (1, 'VGU.01994.0049.54', 'GUESS', 'GU1994', '049', 'GUESS GU1994 (049)', 1, 0, 0, 977.88, 2400),
+    (1, 'VGU.01995.0001.54', 'GUESS', 'GU1995', '001', 'GUESS GU1995 (001)', 1, 0, 0, 963.96, 2400),
+    (1, 'VGU.02696.074.54', 'GUESS', 'GU2696', '074', 'GUESS GU2696 (074)', 1, 0, 0, 974.4, 2400),
+    (1, 'VGU.02683.001.54', 'GUESS', 'GU2683', '001', 'GUESS GU2683 (001)', 1, 0, 0, 867.68, 2400),
+    (2, 'SGU.00010.008V.61', 'GUESS', 'GU0010', '08V', 'GUESS GU0010 (08V)', 1, 0, 0, 728.48, 2400),
+    (1, 'XCT.00820.0C2.54', 'HONOR MOMENT', 'XCT820', '0C2', 'HONOR MOMENT XCT820 (0C2)', 1, 0, 0, 220.4, 1200),
+    (1, 'XCT.00819.0C4.54', 'HONOR MOMENT', 'XCT819', '0C4', 'HONOR MOMENT XCT819 (0C4)', 1, 0, 0, 220.4, 1200),
+    (1, 'JEW.08116.C01.53', 'JEANSWEST', '8116', 'C01', 'JEANSWEST 8116 (C01)', 1, 0, 0, 98.6, 800),
+    (1, 'JEW.08117.C06.53', 'JEANSWEST', '8117', 'C06', 'JEANSWEST 8117 (C06)', 1, 0, 0, 98.6, 800),
+    (1, 'VMR.08022.0C6.49', 'MARINA', 'MR-8022', 'C6', 'MARINA MR-8022 (C6)', 1, 0, 0, 255.2, 1400),
+    (1, 'VMR.08022.0C2.50', 'MARINA', 'MR-8023', 'C2', 'MARINA MR-8023 (C2)', 1, 0, 0, 255.2, 1400),
+    (1, 'VME.M1641.BLK.50', 'MARK EYERWEAR', 'M1641', 'BLK', 'MARK EYERWEAR M1641 (BLK)', 1, 0, 0, 98.6, 900),
+    (1, 'MAX.07203.0C3.58', 'MAXIMUM', '7203', '0C3', 'MAXIMUM 7203 (0C3)', 1, 0, 0, 133.4, 1200),
+    (1, 'MAX.07194.0C6.52', 'MAXIMUM', '7194', '0C6', 'MAXIMUM 7194 (0C6)', 1, 0, 0, 133.4, 1200),
+    (1, 'VMR.0YS22.BLU.54', 'MONROE', 'MRYS22', 'BLU', 'MONROE MRYS22 (BLU)', 2, 0, 0, 98.6, 500),
+    (1, 'VMR.0YS22.SLV.54', 'MONROE', NULL, 'SLV', 'MONROE  (SLV)', 1, 0, 0, 98.6, 500),
+    (1, 'VMR.0YS22.GUN.54', 'MONROE', NULL, 'GUN', 'MONROE  (GUN)', 1, 0, 0, 98.6, 500),
+    (1, 'VMR.0YS11.PNK.51', 'MONROE', 'MRYS11', 'PNK', 'MONROE MRYS11 (PNK)', 2, 0, 0, 98.6, 700),
+    (1, 'VMR.0YS11.BLK.51', 'MONROE', NULL, 'BLK', 'MONROE  (BLK)', 1, 0, 0, 98.6, 700),
+    (1, 'VMR.0YS11.BRN.51', 'MONROE', NULL, 'GLD', 'MONROE  (GLD)', 1, 0, 0, 98.6, 700),
+    (1, 'VMR.0YS11.GLD.51', 'MONROE', NULL, 'BRN', 'MONROE  (BRN)', 1, 0, 0, 98.6, 700),
+    (1, 'MSO.M2245.0C6.55', 'MOSSON', 'M2245', 'C6', 'MOSSON M2245 (C6)', 1, 0, 0, 129.92, 1200),
+    (1, 'MOS.02054.0C2.50', 'MOSSON', 'TR2054', '0C2', 'MOSSON TR2054 (0C2)', 1, 0, 0, 278.4, 1500),
+    (1, 'NTS.06012.0C1.55', 'NATASHA', 'NTS-6012', 'BLK', 'NATASHA NTS-6012 (BLK)', 1, 0, 0, 150.8, 900),
+    (2, 'SNV.18733.DMI.62', 'NIVADA', 'NV18733', 'DMI', 'NIVADA NV18733 (DMI)', 1, 0, 0, 522, 1300),
+    (1, 'ONO.NY408.0C1.54', 'ONOLA', 'ONY408', 'C1', 'ONOLA ONY408 (C1)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON207.0C1.48', 'ONOLA', 'ON207', 'C1', 'ONOLA ON207 (C1)', 1, 0, 0, 174, 600),
+    (1, 'ONO.NY407.0C1.48', 'ONOLA', 'ONY407', 'C1', 'ONOLA ONY407 (C1)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON5033.0C5.54', 'ONOLA', 'ON5033', '0C5', 'ONOLA ON5033 (0C5)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON5033.0C1.55', 'ONOLA', 'ON5033', '0C1', 'ONOLA ON5033 (0C1)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON5033.0C6.56', 'ONOLA', 'ON5033', '0C6', 'ONOLA ON5033 (0C6)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON5025.0C2.52', 'ONOLA', 'ON5025', '0C2', 'ONOLA ON5025 (0C2)', 1, 0, 0, 174, 600),
+    (1, 'ONO.ON5025.0C4.52', 'ONOLA', 'ON5025', '0C4', 'ONOLA ON5025 (0C4)', 1, 0, 0, 174, 600),
+    (1, 'VON.11122.0BRG.54', 'ONX', 'ON11122', 'BRG', 'ONX ON11122 (BRG)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.12487.0BLK.56', 'ONX', 'ON12487', 'BLK', 'ONX ON12487 (BLK)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.12487.0BRG.56', 'ONX', 'ON12487', 'BRG', 'ONX ON12487 (BRG)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.12698.0BLK.56', 'ONX', 'ON12698', 'BLK', 'ONX ON12698 (BLK)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.12700.0BLK.57', 'ONX', 'ON12700', 'BLK', 'ONX ON12700 (BLK)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.12705.0BLU.54', 'ONX', 'ON12705', 'BLU', 'ONX ON12705 (BLU)', 1, 0, 0, 325.1, 850),
+    (1, 'VON.11125.0BLK.54', 'ONX', 'ON11125', 'BLK', 'ONX ON11125 (BLK)', 1, 0, 0, 325.1, 850),
+    (1, 'OZZ.01357.0C1.55', 'OZZO', 'OZZ-1357', 'C1', 'OZZO OZZ-1357 (C1)', 1, 0, 0, 98.6, 345),
+    (2, '203990KB753M9', 'POLAROID', 'PLD 6150/S/X', 'KB7', 'POLAROID PLD 6150/S/X (KB7)', 1, 0, 0, 870, 1700),
+    (1, 'VPL.0A76K.0581.55', 'POLICE', 'VPLA76K', '581', 'POLICE VPLA76K (581)', 1, 0, 0, 578.84, 1500),
+    (1, 'VPL.0A76K.08V7.55', 'POLICE', 'VPLA76K', '8V7', 'POLICE VPLA76K (8V7)', 1, 0, 0, 578.84, 1500),
+    (2, 'SPL.0807K.Z42P.55', 'POLICE', '0807K', 'Z42P', 'POLICE 0807K (Z42P)', 1, 0, 0, 578.84, 2100),
+    (2, 'SPL.0572N.0700.56', 'POLICE', 'SPL572N', '700', 'POLICE SPL572N (700)', 1, 0, 0, 578.84, 2100),
+    (2, 'SPL.0807K.U28B.55', 'POLICE', 'SPL807K', '28B', 'POLICE SPL807K (28B)', 1, 0, 0, 578.84, 2100),
+    (1, 'VSM.SM681.NUD.52', 'SEMA', 'SM681', 'NUD', 'SEMA SM681 (NUD)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM681.BLU.52', 'SEMA', 'SM681', 'BLU', 'SEMA SM681 (BLU)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.WA209.WTH.56', 'SEMA', 'WA209', 'WTH', 'SEMA WA209 (WTH)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM752.GLD.45', 'SEMA', 'SM752', 'GLD', 'SEMA SM752 (GLD)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM854.GRY.53', 'SEMA', 'SM854', 'GRY', 'SEMA SM854 (GRY)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM756.BLK.54', 'SEMA', 'SM765', 'BLK', 'SEMA SM765 (BLK)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM797.MRR.55', 'SEMA', 'SM797', 'MRR', 'SEMA SM797 (MRR)', 1, 0, 0, 98.6, 550),
+    (1, 'VSM.SM570.BLK.58', 'SEMA', 'SM570', 'BLK', 'SEMA SM570 (BLK)', 1, 0, 0, 98.6, 550),
+    (1, 'VSK.02161.001.53', 'SKECHERS', 'SE2161', '001', 'SKECHERS SE2161 (001)', 1, 0, 0, 489.52, 1200),
+    (1, 'VSK.03249.002.54', 'SKECHERS', 'SE3249', '002', 'SKECHERS SE3249 (002)', 1, 0, 0, 489.52, 1200),
+    (1, 'VSK.03283.049.55', 'SKECHERS', 'SE3283', '049', 'SKECHERS SE3283 (049)', 1, 0, 0, 489.52, 1200),
+    (1, 'STB.08306.0C1.53', 'ST. BAR', 'STB-08306', 'C1', 'ST. BAR STB-08306 (C1)', 1, 0, 0, 306.24, 1100),
+    (1, 'VTB.01650.052.57', 'TIMBERLAND', 'TB1650', '052', 'TIMBERLAND TB1650 (052)', 1, 0, 0, 953.52, 2500),
+    (1, 'VTB.01707.0002.56', 'TIMBERLAND', 'TB1707', '002', 'TIMBERLAND TB1707 (002)', 1, 0, 0, 948.88, 2500),
+    (1, 'VTB.01656.009.53', 'TIMBERLAND', 'TB1656', '009', 'TIMBERLAND TB1656 (009)', 1, 0, 0, 1063.72, 2500),
+    (1, 'VTO.00877.1GT.52', 'TOUS', 'VTO877', '1GT', 'TOUS VTO877 (1GT)', 1, 0, 0, 928, 3100),
+    (1, 'VTO.00931.0T90.49', 'TOUS', 'VTO931', 'T90', 'TOUS VTO931 (T90)', 1, 0, 0, 1271.36, 3100),
+    (2, 'STO.00342.0530.50', 'TOUS', 'STO342', '530', 'TOUS STO342 (530)', 1, 0, 0, 1436.08, 3500),
+    (2, 'STO.0903N.0752.55', 'TOUS', 'STO903N', '752', 'TOUS STO903N (752)', 1, 0, 0, 1436.08, 3500),
+    (1, 'VTO.00931.0AD6.49', 'TOUS', 'VTO931', 'AD6', 'TOUS VTO931 (AD6)', 1, 0, 0, 1271.36, 3100),
+    (1, 'VUA.02007.BLK.50', 'UANEON', 'UA-2007', 'BLK', 'UANEON UA-2007 (BLK)', 1, 0, 0, 98.6, 700),
+    (1, 'VVE.D35515.0C1.55', 'VENETIAN', 'D35515', 'C1', 'VENETIAN D35515 (C1)', 2, 0, 0, 98.6, 350),
+    (1, 'VVE.D35515.0C2.55', 'VENETIAN', 'D35515', 'C2', 'VENETIAN D35515 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VVE.D35515.0C3.55', 'VENETIAN', 'D35515', 'C3', 'VENETIAN D35515 (C3)', 1, 0, 0, 98.6, 350),
+    (1, 'VVE.B7039.0C4.', 'VENETIAN', 'B7039', 'C4', 'VENETIAN B7039 (C4)', 1, 0, 0, 98.6, 350),
+    (1, 'VVE.B7039.0C6.', 'VENETIAN', 'B7039', 'C6', 'VENETIAN B7039 (C6)', 1, 0, 0, 98.6, 350),
+    (1, 'VVE.D35535.0C1.', 'VENETIAN', 'D35535', 'C1', 'VENETIAN D35535 (C1)', 1, 0, 0, 98.6, 350),
+    (1, 'VIT.09554.RED.53', 'VITTORIO PEOPLE', 'M09554', 'RED', 'VITTORIO PEOPLE M09554 (RED)', 1, 0, 0, 143.84, 900),
+    (1, 'VAE.0AM15.0BLK.55', 'AEREOPOSTALE', 'AE AM15', 'BLK', 'AEREOPOSTALE AE AM15 (BLK)', 1, 0, 0, 883.92, 1800),
+    (1, 'VBI.80920.DMI.50', 'BELIEVE', 'BL80920', 'DMI', 'BELIEVE BL80920 (DMI)', 1, 0, 0, 505.76, 1200),
+    (1, 'VBE.BS080.VM1.52', 'BENETTON', 'BS080', 'VM1', 'BENETTON BS080 (VM1)', 2, 0, 0, 348, 900),
+    (1, 'VBE.BS081.VM1.52', 'BENETTON', 'BS081', 'VM1', 'BENETTON BS081 (VM1)', 16, 0, 0, 348, 900),
+    (1, 'VBE.BS081.VM2.52', 'BENETTON', 'BS081', 'VM2', 'BENETTON BS081 (VM2)', 1, 0, 0, 348, 900),
+    (1, 'VBE.BS082.VM1.54', 'BENETTON', 'BS082', 'VM1', 'BENETTON BS082 (VM1)', 1, 0, 0, 348, 900),
+    (1, 'VBE.BS083.VM2.54', 'BENETTON', 'BS083', 'VM2', 'BENETTON BS083 (VM2)', 18, 0, 0, 348, 900),
+    (1, 'VBE.BS084.VM2.51', 'BENETTON', 'BS084', 'VM2', 'BENETTON BS084 (VM2)', 8, 0, 0, 348, 900),
+    (1, 'VBE.BS084.VM1.51', 'BENETTON', 'BS084', 'VM1', 'BENETTON BS084 (VM1)', 2, 0, 0, 348, 900),
+    (1, 'VCO.KTS06.0BLK.54', 'CAPA DE OZONO', 'COKTS06', 'BLK', 'CAPA DE OZONO COKTS06 (BLK)', 1, 0, 0, 473.78, 1200),
+    (1, 'VHE.0856V.0781.53', 'CAROLINA HERRERA', 'VHE856V', '781', 'CAROLINA HERRERA VHE856V (781)', 1, 0, 0, 1271.36, 2800),
+    (1, 'VLE.25288.0BRN.55', 'CLOE', 'LE25288', 'BRN', 'CLOE LE25288 (BRN)', 1, 0, 0, 814.32, 1800),
+    (1, 'COA.06010.0C2.52', 'COOA', 'CEJ-6010', 'C2', 'COOA CEJ-6010 (C2)', 1, 0, 0, 98.6, 345),
+    (1, 'COL.06003.0C4.58', 'COOL MEN', 'CM6003', 'C4', 'COOL MEN CM6003 (C4)', 1, 0, 0, 98.6, 900),
+    (1, 'VDY.0109A.0GLD.56', 'DOROTHY GAYNOR', 'DY0109A', 'GLD', 'DOROTHY GAYNOR DY0109A (GLD)', 1, 0, 0, 98.6, 1400),
+    (1, 'VDY.A0184A.0PUR.53', 'DOROTHY GAYNOR', 'DYA0184A', 'PUR', 'DOROTHY GAYNOR DYA0184A (PUR)', 1, 0, 0, 542.88, 1400),
+    (1, 'VLR.35384.0C4.99', 'GENERICO', 'LR35384 C4', 'C4', 'GENERICO LR35384 C4 (C4)', 2, 0, 0, 98.6, 350),
+    (1, NULL, 'GENERICO', 'D35515', 'C2', 'GENERICO D35515 (C2)', 1, 0, 0, 98.6, 350),
+    (1, 'VGU.02567.0005.51', 'GUESS', 'GU2567', '005', 'GUESS GU2567 (005)', 1, 0, 0, 98.6, 2400),
+    (1, 'VGU.02677.005.55', 'GUESS', 'GU2677', '005', 'GUESS GU2677 (005)', 1, 0, 0, 98.6, 2400),
+    (1, 'VON.12627.0PUR.54', 'ONX', 'ON12627', 'PUR', 'ONX ON12627 (PUR)', 1, 0, 0, 98.6, 850),
+    (1, 'VPL.0A86K.08PT.55', 'POLICE', 'VPLA86K', '8PT', 'POLICE VPLA86K (8PT)', 1, 0, 0, 578.84, 1500),
+    (1, 'VPL.0A73K.06HK.55', 'POLICE', 'VPLA73K', '6HK', 'POLICE VPLA73K (6HK)', 1, 0, 0, 98.6, 1500),
+    (1, 'VSM.WA209.BLK.56', 'SEMA', 'WA209', 'BLK', 'SEMA WA209 (BLK)', 1, 0, 0, 98.6, 345),
+    (1, 'VSM.SM210.GRY.51', 'SEMA', 'SM210', 'GRY', 'SEMA SM210 (GRY)', 1, 0, 0, 98.6, 345),
+    (1, 'VSM.SM471.PUR.56', 'SEMA', 'SM471', 'PUR', 'SEMA SM471 (PUR)', 1, 0, 0, 143.84, 345),
+    (1, 'STB.08304.0C1.53', 'ST. BAR', 'STB-08304', 'C1', 'ST. BAR STB-08304 (C1)', 1, 0, 0, 306.24, 1100),
+    (1, 'VTB.01705.0091.57', 'TIMBERLAND', 'TB1705', '091', 'TIMBERLAND TB1705 (091)', 1, 0, 0, 861.88, 2500),
+    (1, 'VIT.09554.GLD.53', 'VITTORIO PEOPLE', 'M09554', 'GLD', 'VITTORIO PEOPLE M09554 (GLD)', 1, 0, 0, 143.84, 550),
+    (2, 'SBC.00065.56B.56', 'BALENCIAGA', 'BA65', '56B', 'BALENCIAGA BA65 (56B)', 1, 0, 0, 0, 2600),
+    (1, 'VCO.21023.0BLK.54', 'CAPA DE OZONO', 'CO21023', 'BLK', 'CAPA DE OZONO CO21023 (BLK)', 1, 0, 0, 0, 1200),
+    (1, 'VHE.00805.01GQ.53', 'CAROLINA HERRERA', 'VHE805', '1GQ', 'CAROLINA HERRERA VHE805 (1GQ)', 1, 0, 0, 0, 2800),
+    (2, 'SLE.20460P.BLK.54', 'CLOE', 'LE20460P', 'BLK', 'CLOE LE20460P (BLK)', 1, 0, 0, 578.84, 1800),
+    (1, 'VLE.81601.SDMI.55', 'CLOE', 'LE81601', 'DMI', 'CLOE LE81601 (DMI)', 1, 0, 0, 0, 1800),
+    (2, 'SDS.00118.52V.54', 'DIESEEL', 'DL0118', '52V', 'DIESEEL DL0118 (52V)', 1, 0, 0, 0, 0),
+    (2, 'SDS.00139.55C.58', 'DIESEEL', 'DL0139', '55C', 'DIESEEL DL0139 (55C)', 1, 0, 0, 0, 0),
+    (1, 'VGU.01982.020.53', 'GUESS', 'GU1982', '020', 'GUESS GU1982 (020)', 1, 0, 0, 0, 2400),
+    (2, 'SGU.05207.008B.64', 'GUESS', 'GU5207', '08B', 'GUESS GU5207 (08B)', 1, 0, 0, 0, 0),
+    (2, 'SGU.07744.048G.61', 'GUESS', 'GU7744', '48G', 'GUESS GU7744 (48G)', 1, 0, 0, 0, 0),
+    (1, 'VON.12720.0BLK.52', 'ONX', 'ON12720', 'BLK', 'ONX ON12720 (BLK)', 1, 0, 0, 0, 850),
+    (1, 'VON.11125.0RED.54', 'ONX', 'ON11125', 'RED', 'ONX ON11125 (RED)', 1, 0, 0, 0, 850),
+    (1, 'VON.12696.RGLD.55', 'ONX', 'ON12696', 'GLD', 'ONX ON12696 (GLD)', 1, 0, 0, 0, 850),
+    (2, '20394680755WJ', 'POLAROID', 'PLD 4108/S', '807', 'POLAROID PLD 4108/S (807)', 1, 0, 0, 0, 0),
+    (2, '2039172M256M9', 'POLAROID', 'PLD 4104/S', '2M2', 'POLAROID PLD 4104/S (2M2)', 1, 0, 0, 0, 0),
+    (2, '203942KB758M9', 'POLAROID', 'PLD 6153/G/S', 'KB7', 'POLAROID PLD 6153/G/S (KB7)', 1, 0, 0, 0, 0),
+    (2, 'SPL.00569.0627.54', 'POLICE', 'SPL569', '627', 'POLICE SPL569 (627)', 1, 0, 0, 0, 2100),
+    (1, 'VTB.01610.001.57', 'TIMBERLAND', 'TB1610', '001', 'TIMBERLAND TB1610 (001)', 1, 0, 0, 0, 2500),
+    (1, 'VTO.00303.SA3.53', 'TOUS', 'VTO303', 'SA3', 'TOUS VTO303 (SA3)', 1, 0, 0, 0, 3100)
+GO
 
-CREATE TABLE RelCombos(
-    IdReg           INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdProdPadre     INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    IdProdHijo      INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE DefMicas( 
-    IdReg           INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdProducto      INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    Procesada       BIT             NOT NULL    DEFAULT 0,
-    Material        VARCHAR(50)     NOT NULL,
-    SphDesde        DECIMAL(10,2)   NOT NULL,
-    SphHasta        DECIMAL(10,2)   NOT NULL,
-    CylDesde        DECIMAL(10,2)   NOT NULL,
-    CylHasta        DECIMAL(10,2)   NOT NULL,
-    AddDesde        DECIMAL(10,2)   NULL,
-    AddHasta        DECIMAL(10,2)   NULL,
-    Escala          DECIMAL(10,2)   NOT NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE DefArmazones(
-    IdReg           INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdProducto      INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    Variante        VARCHAR(50)     NOT NULL,
-    Material        VARCHAR(50)     NOT NULL,
-    Talla           VARCHAR(50)     NOT NULL,
-    Color           VARCHAR(50)     NOT NULL,
-    Genero          VARCHAR(50)     NOT NULL,
-    Med_A           DECIMAL(10,2)   NOT NULL,
-    Med_B           DECIMAL(10,2)   NOT NULL,
-    Med_ED          DECIMAL(10,2)   NOT NULL,
-    Med_DBL         DECIMAL(10,2)   NOT NULL,
-    Med_Varilla     DECIMAL(10,2)   NOT NULL,
-    Med_Puente      DECIMAL(10,2)   NOT NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE CatColecciones(
-    IdColeccion     INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    Coleccion       VARCHAR(50)     NOT NULL,
-    Descrip         VARCHAR(100)    NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE RelColecciones(
-    IdReg           INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdColeccion     INT             NOT NULL    FOREIGN KEY REFERENCES CatColecciones(IdColeccion),
-    IdProducto      INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE CatConvenios(
-    IdConvenio      INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    Convenio        VARCHAR(50)     NOT NULL,
-    Descrip         VARCHAR(100)    NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-INSERT INTO CatConvenios(Convenio, Descrip) VALUES 
+INSERT INTO CatConvenios
+    (Convenio, Descrip)
+VALUES
     ('Ninguno', 'Sin convenio')
 GO
-
-CREATE TABLE CatClientes(
-    IdCliente       INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdConvenio      INT             NOT NULL    FOREIGN KEY REFERENCES CatConvenios(IdConvenio) DEFAULT 1,
-    ApellidoP       VARCHAR(50)     NOT NULL,
-    ApellidoM       VARCHAR(50)     NOT NULL,
-    Nombre          VARCHAR(50)     NOT NULL,
-    Tel             VARCHAR(50)     NOT NULL,
-    Email           VARCHAR(50)     NOT NULL,
-    Direccion       VARCHAR(50)     NOT NULL,
-    Colonia         VARCHAR(50)     NOT NULL,
-    Ciudad          VARCHAR(50)     NOT NULL,
-    Estado          VARCHAR(50)     NOT NULL,
-    CP              VARCHAR(50)     NOT NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE RegDiagnosticoCliente(
-    IdDiagnostico   INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdCliente       INT             NOT NULL    FOREIGN KEY REFERENCES CatClientes(IdCliente),
-    SphOD           DECIMAL(10,2)   NOT NULL,
-    CylOD           DECIMAL(10,2)   NOT NULL,
-    EjeOD           DECIMAL(10,2)   NOT NULL,
-    AddOD           DECIMAL(10,2)   NULL,
-    AltOD           DECIMAL(10,2)   NULL,
-    SphOI           DECIMAL(10,2)   NOT NULL,
-    CylOI           DECIMAL(10,2)   NOT NULL,
-    EjeOI           DECIMAL(10,2)   NOT NULL,
-    AddOI           DECIMAL(10,2)   NULL,
-    AltOI           DECIMAL(10,2)   NULL,
-    DistPupilar     DECIMAL(10,2)   NULL,
-    AltPantoscopica DECIMAL(10,2)   NULL,
-    Observaciones   VARCHAR(100)    NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-)
-
-CREATE TABLE RegVentas (
-    IdVenta         INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdCliente       INT             NOT NULL    FOREIGN KEY REFERENCES CatClientes(IdCliente),
-    IdDiagnostico   INT             NOT NULL    FOREIGN KEY REFERENCES RegDiagnosticoCliente(IdDiagnostico),
-    EsquemaVenta    VARCHAR(50)     NOT NULL,
-    EstatusVenta    VARCHAR(50)     NOT NULL,
-    EsquemaPago     VARCHAR(50)     NOT NULL,
-    EstatusPago     VARCHAR(50)     NOT NULL,
-    MetodoPago      VARCHAR(50)     NOT NULL,
-    Diferido        BIT             NOT NULL    DEFAULT 0,
-    RangoDiferido   VARCHAR(50)     NULL,
-    PagosDiferidos  INT             NULL,
-    FecVenta        DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    FecLiquidado    DATETIME        NULL,
-    FecEntrega      DATETIME        NULL,
-    Activo          BIT             NOT NULL    DEFAULT 1,
-    FecAlta         DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta         VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi         DATETIME        NULL,
-    UsrModi         VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE RegVentaPagos(
-    IdReg          INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdVenta        INT             NOT NULL    FOREIGN KEY REFERENCES RegVentas(IdVenta),
-    Monto          DECIMAL(10,2)   NOT NULL,
-    PagoNo         INT             NOT NULL,
-    PagosFaltantes INT             NOT NULL,
-    FecPago        DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    Activo         BIT             NOT NULL    DEFAULT 1,
-    FecAlta        DATETIME        NOT NULL    DEFAULT (GETDATE()),
-    UsrAlta        VARCHAR(50)     NOT NULL    DEFAULT ('SYSTEM'),
-    FecModi        DATETIME        NULL,
-    UsrModi        VARCHAR(50)     NULL
-) GO
-
-CREATE TABLE DetVentas(
-    IdReg           INT             NOT NULL    IDENTITY(1,1)    PRIMARY KEY,
-    IdVenta         INT             NOT NULL    FOREIGN KEY REFERENCES RegVentas(IdVenta),
-    IdProducto      INT             NOT NULL    FOREIGN KEY REFERENCES CatProductos(IdProducto),
-    IdColeccion     INT             NOT NULL    FOREIGN KEY REFERENCES CatColecciones(IdColeccion),
-    IdLente         INT             NOT NULL    FOREIGN KEY REFERENCES CatLentes(IdLente),
-    IdTratamiento   INT             NOT NULL    FOREIGN KEY REFERENCES CatTratamientos(IdTratamiento),
-    IdMaterial      INT             NOT NULL    FOREIGN KEY REFERENCES CatMateriales(IdMaterial),
-    IdColor         INT             NOT NULL    FOREIGN KEY REFERENCES CatColores(IdColor),
-    IdTipoArmazon   INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposArmazon(IdTipoArmazon),
-    IdTipoCristal   INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposCristal(IdTipoCristal),
-    IdTipoLente     INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposLente(IdTipoLente),
-    IdTipoTratamiento INT           NOT NULL    FOREIGN KEY REFERENCES CatTiposTratamiento(IdTipoTratamiento),
-    IdTipoMaterial  INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposMaterial(IdTipoMaterial),
-    IdTipoColor     INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposColor(IdTipoColor),
-    IdTipoColeccion INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposColeccion(IdTipoColeccion),
-    IdTipoProducto  INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposProducto(IdTipoProducto),
-    IdTipoVenta     INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposVenta(IdTipoVenta),
-    IdTipoPago      INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposPago(IdTipoPago),
-    IdTipoConvenio  INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposConvenio(IdTipoConvenio),
-    IdTipoCliente   INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposCliente(IdTipoCliente),
-    IdTipoDiagnostico INT           NOT NULL    FOREIGN KEY REFERENCES CatTiposDiagnostico(IdTipoDiagnostico),
-    IdTipoVenta     INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposVenta(IdTipoVenta),
-    IdTipoPago      INT             NOT NULL    FOREIGN KEY REFERENCES CatTiposPago(IdTipoPago
-)
