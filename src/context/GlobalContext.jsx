@@ -9,11 +9,13 @@ const endpoint = inDev
 export const GlobalContext = createContext();
 export const GlobalContextProvider = ({ children }) => {
   const splashRef = useRef(null);
+  const containerRef = useRef(null);
 
   const [tipoProductos, setTipoProductos] = useState([]);
   const [productos, setProductos] = useState([]);
   const [defArm, setDefArm] = useState({});
   const [carrito, setCarrito] = useState([]);
+  const [changeScrollColor, setChangeScrollColor] = useState(false);
 
   const handleGetTipoProductos = async () => {
     const response = await fetch(`${endpoint}/ConsultaTipoProductos`);
@@ -43,8 +45,16 @@ export const GlobalContextProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    console.log(carrito);
-  }, [carrito]);
+    const handleScroll = () => {
+      containerRef.current.scrollTop > splashRef.current.clientHeight
+        ? setChangeScrollColor(true)
+        : setChangeScrollColor(false);
+    };
+    containerRef?.current?.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [containerRef]);
 
   return (
     <GlobalContext.Provider
@@ -57,6 +67,8 @@ export const GlobalContextProvider = ({ children }) => {
         handleGetDefArm,
         carrito,
         setCarrito,
+        containerRef,
+        changeScrollColor,
       }}
     >
       {children}

@@ -1,6 +1,13 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Divider, Typography, Chip } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Typography,
+  Chip,
+  Stack,
+  TextField,
+} from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import SunGlasses from "../assets/1088490.svg";
 import Counter from "../components/Counter";
@@ -22,13 +29,11 @@ const Producto = () => {
   return (
     <>
       <Typography variant="body2">Producto</Typography>
-      <Typography variant="body2">{defArm?.TipoProducto}</Typography>
+      <Stack direction="row" spacing={1}>
+        <Typography variant="body2">{defArm?.TipoProducto}</Typography>
+      </Stack>
       <Divider sx={{ my: 2 }} />
-      <Box
-        alignItems={"center"}
-        justifyContent={"center"}
-        display={"grid"}
-      >
+      <Box alignItems={"center"} justifyContent={"center"} display={"grid"}>
         <Box
           sx={{ height: "100%", maxWidth: "20vw" }}
           component={"img"}

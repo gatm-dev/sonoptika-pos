@@ -8,10 +8,13 @@ import {
   ImageListItemBar,
   Stack,
   Button,
+  Divider,
+  TextField,
 } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import Counter from "../components/Counter";
 import SunGlassSVG from "../assets/1088490.svg";
+import { Search as SearchIcon } from "@mui/icons-material";
 
 const Productos = () => {
   const { tipoProducto } = useParams();
@@ -30,8 +33,22 @@ const Productos = () => {
 
   return (
     <Box sx={{ maxHeight: 200 }}>
-      <Typography variant="body2">Productos</Typography>
-      <Typography variant="h6">{objTipoProducto.TipoProducto}</Typography>
+      <Stack direction="column" spacing={2} position={"sticky"}>
+        <Typography variant="body2">Productos</Typography>
+        <Stack
+          direction="row"
+          spacing={2}
+          justifyContent={"space-between"}
+          alignItems={"center"}
+        >
+          <Typography variant="h6">{objTipoProducto.TipoProducto}</Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-end" }}>
+            <SearchIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
+            <TextField id="outlined-basic" label="Filtrar" variant="standard" />
+          </Box>
+        </Stack>
+      </Stack>
+      <Divider sx={{ my: 2 }} />
       <ImageList cols={2} rowHeight={"auto"} gap={20} sx={{ maxWidth: "100%" }}>
         {productos &&
           productos?.map((item) => (
@@ -64,7 +81,7 @@ const Productos = () => {
                   subtitle={<span>by: {item?.Marca}</span>}
                   position="below"
                 />
-                <Counter item={item.IdProducto}/>
+                <Counter item={item.IdProducto} />
                 <Button
                   variant="contained"
                   color="primary"
