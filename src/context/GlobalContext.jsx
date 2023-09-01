@@ -1,10 +1,22 @@
 /* eslint-disable react/prop-types */
-import { createContext, useState, useEffect, useRef } from "react";
 
-const inDev = true; // cambiar a false cuando se compre el hosting
+const inDev = true;
+
 const endpoint = inDev
   ? "https://api.frame-shamir.com/Respaldo6/pos"
   : "https://api.frame-shamir.com/Respaldo6/pos";
+
+import { createContext, useState, useEffect, useRef } from "react";
+import { firestore } from "../firebase/client";
+import {
+  and,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 
 export const GlobalContext = createContext();
 export const GlobalContextProvider = ({ children }) => {
@@ -18,26 +30,46 @@ export const GlobalContextProvider = ({ children }) => {
   const [changeScrollColor, setChangeScrollColor] = useState(false);
 
   const handleGetTipoProductos = async () => {
-    const response = await fetch(`${endpoint}/ConsultaTipoProductos`);
-    const data = await response.json();
-    setTipoProductos(data);
+    const q = query(
+      collection(firestore, "CatTipoProducto"),
+      where("Activo", "==", true)
+    );
+    getDocs(q)
+      .then((querySnapshot) => {
+        const data = querySnapshot.docs.map((doc) => doc.data());
+        setTipoProductos(data);
+      })
+      .catch((error) => console.log("Error al obtener el documento: ", error));
   };
 
   const handleGetProductos = async (categoria, tipoProducto) => {
-    const response = await fetch(
-      `${endpoint}/ConsultaProductos?Categoria=${categoria}&TipoProducto=${tipoProducto}`
+    const q = query(
+      collection(firestore, "CatProductos"),
+      and(
+        where("Activo", "==", true),
+        where("Categoria", "==", categoria),
+        where("TipoProducto", "==", tipoProducto)
+      )
     );
-    const data = await response.json();
-    setProductos(data);
+    getDocs(q)
+      .then((querySnapshot) => {
+        const data = querySnapshot.docs.map((doc) => doc.data());
+        setProductos(data);
+      })
+      .catch((error) => console.log("Error al obtener el documento: ", error));
   };
 
   const handleGetDefArm = async (idProducto) => {
-    const response = await fetch(
-      `${endpoint}/ConsultaArm?idProducto=${idProducto}`
+    const q = query(
+      collection(firestore, "CatProductos"),
+      and(where("Activo", "==", true), where("IdProducto", "==", idProducto))
     );
-    const data = await response.json();
-    if (data && Array.isArray(data)) setDefArm(data[0]);
-    else setDefArm(data);
+    getDocs(q)
+      .then((querySnapshot) => {
+        const data = querySnapshot.docs.map((doc) => doc.data());
+        setDefArm(data[0]);
+      })
+      .catch((error) => console.log("Error al obtener el documento: ", error));
   };
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useContext } from "react";
 import { useParams, Link as LinkRouter } from "react-router-dom";
 import {
@@ -13,8 +14,9 @@ import {
 } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import Counter from "../components/Counter";
+
 import SunGlassSVG from "../assets/1088490.svg";
-import { Search as SearchIcon } from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
 
 const Productos = () => {
   const { tipoProducto } = useParams();
@@ -28,7 +30,9 @@ const Productos = () => {
   }, [tipoProducto]);
 
   useEffect(() => {
-    handleGetProductos(objTipoProducto.Categoria, objTipoProducto.TipoProducto);
+    let { Categoria, TipoProducto } = objTipoProducto;
+    if (Categoria === undefined || TipoProducto === undefined) return;
+    handleGetProductos(Categoria, TipoProducto);
   }, [objTipoProducto]);
 
   return (

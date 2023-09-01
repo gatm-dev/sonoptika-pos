@@ -1,6 +1,8 @@
 /* eslint-disable react/prop-types */
 import { useContext } from "react";
 import { GlobalContext } from "../context/GlobalContext";
+import { Link as LinkRouter } from "react-router-dom";
+
 import {
   Typography,
   Container,
@@ -11,7 +13,6 @@ import {
   Link,
   ListItem,
 } from "@mui/material";
-import { Link as LinkRouter } from "react-router-dom";
 
 const Menu = ({ menuOpen }) => {
   const { splashRef, tipoProductos } = useContext(GlobalContext);

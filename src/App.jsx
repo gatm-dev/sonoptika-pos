@@ -3,14 +3,14 @@
 /* eslint-disable react/no-unknown-property */
 
 import { useState, useContext } from "react";
+import { GlobalContext } from "./context/GlobalContext";
+
+import { Outlet } from "react-router-dom";
 import { Grid, Container } from "@mui/material";
 
 import Splash from "./components/Splash";
 import NavBar from "./components/NavBar";
 import Menu from "./components/Menu";
-import { Outlet } from "react-router-dom";
-
-import { GlobalContext } from "./context/GlobalContext";
 
 function App() {
   const { splashRef, containerRef } = useContext(GlobalContext);
@@ -38,7 +38,8 @@ function App() {
         >
           <NavBar menuOpen={menuOpen} handleMenuOpen={handleMenuOpen} />
           <Container sx={{ p: 2 }}>
-            <Outlet /> {/* Outlet para <Productos /> */}
+            {/* Outlet para <Productos /> */}
+            <Outlet />
           </Container>
         </Grid>
       </Grid>

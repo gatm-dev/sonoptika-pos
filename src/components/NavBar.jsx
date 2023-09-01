@@ -1,15 +1,16 @@
 /* eslint-disable react/prop-types */
 import { useContext } from "react";
+import { GlobalContext } from "../context/GlobalContext";
+import { Link } from "react-router-dom";
+
 import { AppBar, Toolbar, IconButton, Button } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  MenuOpen as MenuOpenIcon,
-  ShoppingCartRounded as ShoppingCartIcon,
-} from "@mui/icons-material";
+
+import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCartRounded";
+
 import SonoptikaIcon1 from "../assets/3.png";
 import SonoptikaIcon2 from "../assets/VARIANTE-LOGO-1.png";
-import { Link } from "react-router-dom";
-import { GlobalContext } from "../context/GlobalContext";
 
 const NavBar = ({ menuOpen, handleMenuOpen }) => {
   const { carrito, changeScrollColor } = useContext(GlobalContext);

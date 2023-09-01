@@ -1,12 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
   Divider,
   Typography,
-  Chip,
   Stack,
-  TextField,
 } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import SunGlasses from "../assets/1088490.svg";

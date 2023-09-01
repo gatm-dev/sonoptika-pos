@@ -1,6 +1,7 @@
 import { useContext } from "react";
-import { Box, Typography } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
+
+import { Box, Typography } from "@mui/material";
 
 const Splash = () => {
   const {splashRef} = useContext(GlobalContext);
