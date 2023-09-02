@@ -57,6 +57,16 @@ const Menu = ({ menuOpen }) => {
               textShadow: "0px 5px 10px rgb(50, 50, 0)",
             }}
           >
+              <ListItem>
+                <Link
+                  component={LinkRouter}
+                  to={`/`}
+                  sx={{ color: "#c1c1c1" }}
+                  variant="body2"
+                >
+                  VOLVER AL INICIO
+                </Link>
+              </ListItem>
             {tipoProductos?.map((tipoProducto) => (
               <ListItem key={tipoProducto?.IdTipoProducto}>
                 <Link

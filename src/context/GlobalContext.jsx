@@ -1,18 +1,13 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/prop-types */
 
-const inDev = true;
-
-const endpoint = inDev
-  ? "https://api.frame-shamir.com/Respaldo6/pos"
-  : "https://api.frame-shamir.com/Respaldo6/pos";
-
 import { createContext, useState, useEffect, useRef } from "react";
-import { firestore } from "../firebase/client";
+import { firestore, storage } from "../firebase/client";
+import { ref as imgRef, getDownloadURL } from "firebase/storage";
 import {
+  addDoc,
   and,
   collection,
-  doc,
-  getDoc,
   getDocs,
   query,
   where,
@@ -23,13 +18,17 @@ export const GlobalContextProvider = ({ children }) => {
   const splashRef = useRef(null);
   const containerRef = useRef(null);
 
+  const [loading, setLoading] = useState(false);
   const [tipoProductos, setTipoProductos] = useState([]);
   const [productos, setProductos] = useState([]);
   const [defArm, setDefArm] = useState({});
   const [carrito, setCarrito] = useState([]);
   const [changeScrollColor, setChangeScrollColor] = useState(false);
+  const [confirmCheckout, setConfirmCheckout] = useState(false);
+  const [compraId, setCompraId] = useState("");
 
   const handleGetTipoProductos = async () => {
+    setLoading(true);
     const q = query(
       collection(firestore, "CatTipoProducto"),
       where("Activo", "==", true)
@@ -40,9 +39,11 @@ export const GlobalContextProvider = ({ children }) => {
         setTipoProductos(data);
       })
       .catch((error) => console.log("Error al obtener el documento: ", error));
+    setLoading(false);
   };
 
   const handleGetProductos = async (categoria, tipoProducto) => {
+    setLoading(true);
     const q = query(
       collection(firestore, "CatProductos"),
       and(
@@ -57,9 +58,11 @@ export const GlobalContextProvider = ({ children }) => {
         setProductos(data);
       })
       .catch((error) => console.log("Error al obtener el documento: ", error));
+    setLoading(false);
   };
 
   const handleGetDefArm = async (idProducto) => {
+    setLoading(true);
     const q = query(
       collection(firestore, "CatProductos"),
       and(where("Activo", "==", true), where("IdProducto", "==", idProducto))
@@ -70,10 +73,51 @@ export const GlobalContextProvider = ({ children }) => {
         setDefArm(data[0]);
       })
       .catch((error) => console.log("Error al obtener el documento: ", error));
+    setLoading(false);
+  };
+
+  const handleGetImg = async (idProducto) => {
+    setLoading(true);
+    const storageRef = imgRef(storage, `Productos/${idProducto}.png`);
+    getDownloadURL(storageRef)
+      .then((url) => {
+        return url;
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    setLoading(false);
+  };
+
+  const handleVaciarCarrito = () => {
+    setCarrito([]);
+    setConfirmCheckout(false);
+    setCompraId("");
+    confirmCheckout && setConfirmCheckout(false);
+  };
+
+  const handlePostCarrito = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const orderRef = collection(firestore, "CatOrdenes");
+    const payload = {
+      cliente: {
+        nombre: "Juan",
+        telefono: "1234567890",
+        email: "juan@example.com",
+      },
+      productos: carrito,
+      total: carrito.reduce((acc, item) => acc + item.PrecioVenta, 0),
+    };
+
+    addDoc(orderRef, payload).then((docRef) => {
+      setCompraId(docRef.id);
+    });
+    setLoading(false);
   };
 
   useEffect(() => {
-    handleGetTipoProductos();
+    if (tipoProductos.length === 0) handleGetTipoProductos();
   }, []);
 
   useEffect(() => {
@@ -94,6 +138,7 @@ export const GlobalContextProvider = ({ children }) => {
         splashRef,
         tipoProductos,
         productos,
+        handleGetTipoProductos,
         handleGetProductos,
         defArm,
         handleGetDefArm,
@@ -101,6 +146,12 @@ export const GlobalContextProvider = ({ children }) => {
         setCarrito,
         containerRef,
         changeScrollColor,
+        handlePostCarrito,
+        compraId,
+        loading,
+        confirmCheckout,
+        setConfirmCheckout,
+        handleVaciarCarrito,
       }}
     >
       {children}

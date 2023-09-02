@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useContext } from "react";
 import { GlobalContext } from "../context/GlobalContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { AppBar, Toolbar, IconButton, Button } from "@mui/material";
 
@@ -14,6 +14,7 @@ import SonoptikaIcon2 from "../assets/VARIANTE-LOGO-1.png";
 
 const NavBar = ({ menuOpen, handleMenuOpen }) => {
   const { carrito, changeScrollColor } = useContext(GlobalContext);
+  const navigate = useNavigate();
   return (
     <AppBar
       position="sticky"
@@ -53,18 +54,21 @@ const NavBar = ({ menuOpen, handleMenuOpen }) => {
             }}
           />
         </Link>
-        <Button
-          color="primary"
-          variant="filled"
-          startIcon={<ShoppingCartIcon />}
-          sx={{
-            display: "flex",
-            ml: changeScrollColor ? "auto" : "none",
-            color: changeScrollColor ? "#fff" : "#1c1c1",
-          }}
-        >
-          {carrito.reduce((acc, obj) => acc + obj?.cantidad, 0)}
-        </Button>
+        {carrito.length > 0 && (
+          <Button
+            color="primary"
+            variant="filled"
+            startIcon={<ShoppingCartIcon />}
+            sx={{
+              display: "flex",
+              ml: changeScrollColor ? "auto" : "none",
+              color: changeScrollColor ? "#fff" : "#1c1c1",
+            }}
+            onClick={() => navigate("/checkout")}
+          >
+            {carrito.reduce((acc, obj) => acc + obj?.cantidad, 0)}
+          </Button>
+        )}
       </Toolbar>
     </AppBar>
   );

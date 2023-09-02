@@ -1,12 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
-import {
-  Box,
-  Divider,
-  Typography,
-  Stack,
-} from "@mui/material";
+import { Box, Divider, Typography, Stack, Chip } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import SunGlasses from "../assets/1088490.svg";
 import Counter from "../components/Counter";
@@ -22,19 +17,29 @@ const Producto = () => {
   }, [idProducto]);
 
   useEffect(() => {
-    if (objProducto) handleGetDefArm(objProducto?.IdProducto);
+    if (objProducto?.IdProducto) handleGetDefArm(objProducto?.IdProducto);
   }, [objProducto]);
 
+  if (idProducto === undefined) return <>No hay producto para mostrar</>;
   return (
     <>
       <Typography variant="body2">Producto</Typography>
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={2}>
         <Typography variant="body2">{defArm?.TipoProducto}</Typography>
       </Stack>
       <Divider sx={{ my: 2 }} />
-      <Box alignItems={"center"} justifyContent={"center"} display={"grid"}>
+      <Stack
+        direction="column"
+        spacing={1}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Box
-          sx={{ height: "100%", maxWidth: "20vw" }}
+          sx={{ maxWidth: "20vw", alignSelf: "center" }}
           component={"img"}
           src={SunGlasses}
         />
@@ -49,10 +54,15 @@ const Producto = () => {
           <strong>Modelo:</strong> {defArm?.Modelo}
         </Typography>
         <Typography variant="body2">
-          <strong>Precio:</strong> ${Number(defArm?.PrecioVenta).toFixed(2)}
+          <strong>Precio:</strong>{" "}
+          <Chip
+            label={Number(defArm?.PrecioVenta).toFixed(2)}
+            variant="filled"
+            color="primary"
+          />
         </Typography>
         <Counter item={defArm.IdProducto} />
-      </Box>
+      </Stack>
     </>
   );
 };

@@ -8,6 +8,7 @@ import { GlobalContextProvider } from "./context/GlobalContext";
 import Landing from "./routes/Landing.jsx";
 import Productos from "./routes/Productos.jsx";
 import Producto from "./routes/Producto.jsx";
+import Checkout from "./routes/Checkout.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               path="/productos/:tipoProducto"
               element={<Productos />}
             />
+            <Route path="/checkout" element={<Checkout />} />
           </Route>
         </Routes>
       </BrowserRouter>

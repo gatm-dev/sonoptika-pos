@@ -8,16 +8,20 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 
 const Counter = ({ item }) => {
-  const { carrito, setCarrito } = useContext(GlobalContext);
+  const { carrito, setCarrito, productos } = useContext(GlobalContext);
 
   return carrito?.some((i) => i.IdProducto === item) ? (
     <Stack direction={"row"} alignItems={"center"}>
       <IconButton
         onClick={() =>
           setCarrito(
-            carrito.map((i) =>
+            productos?.map((i) =>
               i.IdProducto === item && i.cantidad > 1
-                ? { ...i, cantidad: i.cantidad - 1 }
+                ? {
+                    ...i,
+                    cantidad: i.cantidad - 1,
+                    precio: i.precio - i.precio,
+                  }
                 : { ...i }
             )
           )
@@ -25,13 +29,17 @@ const Counter = ({ item }) => {
       >
         <RemoveIcon />
       </IconButton>
-      {carrito?.find((i) => i.IdProducto === item).cantidad}
+      {carrito?.find((i) => i?.IdProducto === item).cantidad}
       <IconButton
         onClick={() =>
           setCarrito(
-            carrito?.map((i) =>
+            productos?.map((i) =>
               i.IdProducto === item
-                ? { ...i, cantidad: i.cantidad + 1 }
+                ? {
+                    ...i,
+                    cantidad: i.cantidad + 1,
+                    precio: i.precio + i.precio,
+                  }
                 : { ...i }
             )
           )

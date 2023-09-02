@@ -1,7 +1,8 @@
+import Carousel from '../components/Carousel';
 const Landing = () => {
   return (
     <div>
-      <h1>Landing</h1>
+      <Carousel />
     </div>
   );
 };

@@ -1,0 +1,17 @@
+@keyframes spin {
+  0% {
+    transform: rotate(360deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.App-logo {
+  animation: spin infinite 2s ease-in-out alternate;
+  height: 40vmin;
+  pointer-events: none;
+}

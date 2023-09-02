@@ -10,21 +10,24 @@ import {
   Stack,
   Button,
   Divider,
-  TextField,
 } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import Counter from "../components/Counter";
 
 import SunGlassSVG from "../assets/1088490.svg";
-import SearchIcon from "@mui/icons-material/Search";
 
 const Productos = () => {
   const { tipoProducto } = useParams();
   const [objTipoProducto, setObjTipoProducto] = useState({});
-  const { productos, tipoProductos, handleGetProductos } =
-    useContext(GlobalContext);
+  const {
+    productos,
+    tipoProductos,
+    handleGetProductos,
+    handleGetTipoProductos,
+  } = useContext(GlobalContext);
 
   useEffect(() => {
+    if (tipoProductos === undefined) handleGetTipoProductos();
     const obj = tipoProductos?.find((p) => p.TipoProducto === tipoProducto);
     setObjTipoProducto(obj || {});
   }, [tipoProducto]);
@@ -46,10 +49,6 @@ const Productos = () => {
           alignItems={"center"}
         >
           <Typography variant="h6">{objTipoProducto.TipoProducto}</Typography>
-          <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-            <SearchIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
-            <TextField id="outlined-basic" label="Filtrar" variant="standard" />
-          </Box>
         </Stack>
       </Stack>
       <Divider sx={{ my: 2 }} />
@@ -62,19 +61,16 @@ const Productos = () => {
                 srcSet={`${SunGlassSVG}?w=248&fit=crop&auto=format&dpr=2 2x`}
                 alt={item.NombreComercial}
                 loading="lazy"
-                sx={{ height: "100%", maxWidth: "20vw" }}
+                sx={{ maxWidth: "20vw", alignSelf: "center" }}
                 component={"img"}
               />
               <Stack
-                direction="row"
+                direction="column"
                 spacing={1}
                 alignItems={"center"}
-                justifyContent={"space-between"}
+                justifyContent={"space-around"}
               >
                 <ImageListItemBar
-                  sx={{
-                    p: 2,
-                  }}
                   title={
                     <>
                       {item?.NombreComercial}
@@ -91,6 +87,7 @@ const Productos = () => {
                   color="primary"
                   component={LinkRouter}
                   to={`/producto/${item.Sku}`}
+                  fullWidth
                 >
                   Ver detalles
                 </Button>

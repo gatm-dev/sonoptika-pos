@@ -1,31 +1,36 @@
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-import "./swiper.css"
+import "./swiper.css";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation } from "swiper/modules";
+
+import Banner1 from "../assets/b1.png";
+import Banner2 from "../assets/b2.png";
 
 const Carousel = () => {
   return (
     <>
       <Swiper
         pagination={{
-          type: "progressbar",
+          type: "bullets",
         }}
         navigation={true}
         modules={[Pagination, Navigation]}
         className="mySwiper"
+        autoplay={{
+          delay: 5000,
+          disableOnInteraction: false,
+          reverseDirection: false,
+        }}
       >
-        <SwiperSlide>Slide 1</SwiperSlide>
-        <SwiperSlide>Slide 2</SwiperSlide>
-        <SwiperSlide>Slide 3</SwiperSlide>
-        <SwiperSlide>Slide 4</SwiperSlide>
-        <SwiperSlide>Slide 5</SwiperSlide>
-        <SwiperSlide>Slide 6</SwiperSlide>
-        <SwiperSlide>Slide 7</SwiperSlide>
-        <SwiperSlide>Slide 8</SwiperSlide>
-        <SwiperSlide>Slide 9</SwiperSlide>
+        <SwiperSlide>
+          <img src={Banner1} />
+        </SwiperSlide>
+        <SwiperSlide>
+          <img src={Banner2} />
+        </SwiperSlide>
       </Swiper>
     </>
   );
