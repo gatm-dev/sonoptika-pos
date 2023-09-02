@@ -26,6 +26,21 @@ export const GlobalContextProvider = ({ children }) => {
   const [changeScrollColor, setChangeScrollColor] = useState(false);
   const [confirmCheckout, setConfirmCheckout] = useState(false);
   const [compraId, setCompraId] = useState("");
+  const [payload, setPayload] = useState({
+    cliente: {
+      apellidoPaterno: "",
+      apellidoMaterno: "",
+      nombre: "",
+      email: "",
+      telefono: "",
+      direccion: "",
+      ciudad: "",
+      provincia: "",
+      codigoPostal: "",
+    },
+    productos: carrito,
+    total: carrito.reduce((acc, item) => acc + item.PrecioVenta, 0) || 0,
+  });
 
   const handleGetTipoProductos = async () => {
     setLoading(true);
@@ -76,17 +91,27 @@ export const GlobalContextProvider = ({ children }) => {
     setLoading(false);
   };
 
-  const handleGetImg = async (idProducto) => {
-    setLoading(true);
-    const storageRef = imgRef(storage, `Productos/${idProducto}.png`);
+  const handleGetImg = (idProducto) => {
+    const storageRef = imgRef(
+      storage,
+      `ReactJS-Certificate-Productos/${idProducto}.png`
+    );
     getDownloadURL(storageRef)
       .then((url) => {
+        const xhr = new XMLHttpRequest();
+        xhr.responseType = "blob";
+        xhr.onload = (event) => {
+          const blob = xhr.response;
+        };
+        xhr.open("GET", url);
+        xhr.send();
+
         return url;
       })
       .catch((error) => {
         console.log(error);
       });
-    setLoading(false);
+    return null;
   };
 
   const handleVaciarCarrito = () => {
@@ -94,21 +119,28 @@ export const GlobalContextProvider = ({ children }) => {
     setConfirmCheckout(false);
     setCompraId("");
     confirmCheckout && setConfirmCheckout(false);
+    confirmCheckout &&
+      setPayload({
+        cliente: {
+          apellidoPaterno: "",
+          apellidoMaterno: "",
+          nombre: "",
+          email: "",
+          telefono: "",
+          direccion: "",
+          ciudad: "",
+          provincia: "",
+          codigoPostal: "",
+        },
+        productos: carrito,
+        total: carrito.reduce((acc, item) => acc + item.PrecioVenta, 0) || 0,
+      });
   };
 
   const handlePostCarrito = (e) => {
     e.preventDefault();
     setLoading(true);
     const orderRef = collection(firestore, "CatOrdenes");
-    const payload = {
-      cliente: {
-        nombre: "Juan",
-        telefono: "1234567890",
-        email: "juan@example.com",
-      },
-      productos: carrito,
-      total: carrito.reduce((acc, item) => acc + item.PrecioVenta, 0),
-    };
 
     addDoc(orderRef, payload).then((docRef) => {
       setCompraId(docRef.id);
@@ -152,6 +184,9 @@ export const GlobalContextProvider = ({ children }) => {
         confirmCheckout,
         setConfirmCheckout,
         handleVaciarCarrito,
+        handleGetImg,
+        payload,
+        setPayload,
       }}
     >
       {children}

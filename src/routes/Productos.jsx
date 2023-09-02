@@ -57,8 +57,12 @@ const Productos = () => {
           productos?.map((item) => (
             <ImageListItem key={item.Sku}>
               <Box
-                src={`${SunGlassSVG}?w=248&fit=crop&auto=format`}
-                srcSet={`${SunGlassSVG}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                src={`${
+                  /*handleGetImg(item?.Sku) ||*/ SunGlassSVG
+                }?w=248&fit=crop&auto=format`}
+                srcSet={`${
+                  /*handleGetImg(item?.Sku) || */ SunGlassSVG
+                }?w=248&fit=crop&auto=format&dpr=2 2x`}
                 alt={item.NombreComercial}
                 loading="lazy"
                 sx={{ maxWidth: "20vw", alignSelf: "center" }}
@@ -81,7 +85,7 @@ const Productos = () => {
                   subtitle={<span>by: {item?.Marca}</span>}
                   position="below"
                 />
-                <Counter item={item.IdProducto} />
+                <Counter item={item} />
                 <Button
                   variant="contained"
                   color="primary"

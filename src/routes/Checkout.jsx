@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { GlobalContext } from "../context/GlobalContext";
 import {
   Button,
@@ -20,11 +20,39 @@ const Checkout = () => {
     carrito,
     handlePostCarrito,
     compraId,
-    defArm,
     confirmCheckout,
     setConfirmCheckout,
     handleVaciarCarrito,
+    payload,
+    setPayload,
   } = useContext(GlobalContext);
+
+  const [total, setTotal] = useState(0);
+  const [count, setCount] = useState(10);
+
+  const handleCancelCheckout = () => {
+    handleVaciarCarrito();
+    navigate("/");
+  };
+
+  const handleSetPayload = (e) => {
+    setPayload({
+      ...payload,
+      cliente: {
+        ...payload.cliente,
+        [e.target.name]: e.target.value,
+      },
+    });
+  };
+
+  const clear = () => {
+    if (count === 10) setInterval(() => setCount((prev) => prev - 1), 1000);
+    if (count <= 0) handleCancelCheckout();
+  };
+
+  useEffect(() => {
+    setTotal(carrito.reduce((acc, item) => acc + item?.precio, 0));
+  }, [carrito]);
 
   if (carrito.length === 0)
     return (
@@ -37,6 +65,26 @@ const Checkout = () => {
         <Typography variant="h6">No hay productos en el carrito</Typography>
       </Stack>
     );
+
+  if (compraId) {
+    clear();
+    return (
+      <Stack
+        direction={"column"}
+        spacing={2}
+        sx={{ justifyContent: "space-between", alignItems: "center" }}
+      >
+        <Typography variant="h4">Compra realizada con éxito</Typography>
+        <Typography variant="body2">
+          Id de compra: <strong>{compraId}</strong>
+        </Typography>
+        <Typography variant="body2">
+          Seras redireccionado automaticamente a la pagina principal en {count}{" "}
+          segundos
+        </Typography>
+      </Stack>
+    );
+  }
 
   return (
     <Box sx={{ maxHeight: 200 }}>
@@ -87,17 +135,14 @@ const Checkout = () => {
                       }}
                     >
                       {item.NombreComercial}
-                      <Counter item={defArm.IdProducto} />
+                      <Counter item={item} disabled={confirmCheckout} />
                     </Stack>
                   </li>
                 ))}
               </ul>
             </Grid>
             <Grid item>
-              <h3>
-                Total:{" "}
-                {carrito.reduce((acc, item) => acc + item?.PrecioVenta, 0)}
-              </h3>
+              <h3>Total:{total}</h3>
             </Grid>
             <Grid item>
               {!confirmCheckout && (
@@ -105,10 +150,7 @@ const Checkout = () => {
                   <Button
                     variant="outlined"
                     color="secondary"
-                    onClick={() => {
-                      handleVaciarCarrito();
-                      navigate("/");
-                    }}
+                    onClick={handleCancelCheckout}
                   >
                     Vaciar carrito
                   </Button>
@@ -123,12 +165,6 @@ const Checkout = () => {
                 </Stack>
               )}
             </Grid>
-            {compraId && (
-              <Grid item xs={12}>
-                <h3>Compra realizada con éxito</h3>
-                <p>Id de compra: {compraId}</p>
-              </Grid>
-            )}
           </Grid>
         </Grid>
         {confirmCheckout && (
@@ -144,17 +180,26 @@ const Checkout = () => {
                       label="Apellido Paterno"
                       variant="outlined"
                       size="small"
+                      value={payload.cliente.apellidoPaterno}
+                      onChange={handleSetPayload}
+                      name="apellidoPaterno"
                     />
                     <TextField
                       label="Apellido Materno"
                       variant="outlined"
                       size="small"
+                      value={payload.cliente.apellidoMaterno}
+                      onChange={handleSetPayload}
+                      name="apellidoMaterno"
                     />
                     <TextField
                       label="Nombre"
                       variant="outlined"
                       size="small"
                       sx={{ flexGrow: 1 }}
+                      value={payload.cliente.nombre}
+                      onChange={handleSetPayload}
+                      name="nombre"
                     />
                   </Stack>
                 </Stack>
@@ -167,11 +212,17 @@ const Checkout = () => {
                       variant="outlined"
                       size="small"
                       sx={{ flexGrow: 1 }}
+                      value={payload.cliente.email}
+                      onChange={handleSetPayload}
+                      name="email"
                     />
                     <TextField
                       label="Teléfono"
                       variant="outlined"
                       size="small"
+                      value={payload.cliente.telefono}
+                      onChange={handleSetPayload}
+                      name="telefono"
                     />
                   </Stack>
                 </Stack>
@@ -189,26 +240,51 @@ const Checkout = () => {
                         label="Ciudad"
                         variant="outlined"
                         size="small"
+                        value={payload.cliente.ciudad}
+                        onChange={handleSetPayload}
+                        name="ciudad"
                       />
                       <TextField
                         label="Provincia"
                         variant="outlined"
                         size="small"
                         sx={{ flexGrow: 1 }}
+                        value={payload.cliente.provincia}
+                        onChange={handleSetPayload}
+                        name="provincia"
                       />
                       <TextField
                         label="Código postal"
                         variant="outlined"
                         size="small"
+                        value={payload.cliente.codigoPostal}
+                        onChange={handleSetPayload}
+                        name="codigoPostal"
                       />
                     </Stack>
                   </Stack>
                 </Stack>
               </Stack>
               <hr />
-              <Button variant="contained" color="warning" fullWidth>
-                Confirmar y realizar compra
-              </Button>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="secondary"
+                  fullWidth
+                  onClick={handleCancelCheckout}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  fullWidth
+                  type="submit"
+                >
+                  Confirmar y realizar compra
+                </Button>
+              </Stack>
             </form>
           </Grid>
         )}

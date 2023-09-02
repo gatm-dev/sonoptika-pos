@@ -1,65 +1,80 @@
 /* eslint-disable react/prop-types */
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { GlobalContext } from "../context/GlobalContext";
 
-import { Stack, IconButton, Button } from "@mui/material";
+import { Stack, IconButton, Button, Typography } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 
-const Counter = ({ item }) => {
-  const { carrito, setCarrito, productos } = useContext(GlobalContext);
+const Counter = ({ item, disabled = false }) => {
+  const { carrito, setCarrito } = useContext(GlobalContext);
+  const [cantidad, setCantidad] = useState(0);
+  const exists =
+    carrito?.find((i) => i?.IdProducto === item?.IdProducto) || null;
 
-  return carrito?.some((i) => i.IdProducto === item) ? (
-    <Stack direction={"row"} alignItems={"center"}>
-      <IconButton
+  useEffect(() => {
+    if (exists) {
+      setCantidad(exists?.cantidad);
+    } else {
+      setCantidad(0);
+    }
+  }, [carrito, exists]);
+
+  const handleSetCount = (count) => {
+    if (count === 0) {
+      setCarrito(carrito.filter((i) => i.IdProducto !== item.IdProducto));
+    } else {
+      setCarrito(
+        carrito?.map((i) =>
+          i.IdProducto === item.IdProducto
+            ? {
+                ...i,
+                cantidad: count,
+                precio: count * item?.PrecioVenta,
+              }
+            : { ...i }
+        )
+      );
+    }
+  };
+
+  if (exists)
+    return (
+      <Stack direction={"row"} alignItems={"center"}>
+        <IconButton
+          onClick={() => cantidad > 0 && handleSetCount(cantidad - 1)}
+          disabled={disabled}
+        >
+          <RemoveIcon />
+        </IconButton>
+        <Typography variant={"body2"}>{cantidad}</Typography>
+        <IconButton
+          onClick={() => handleSetCount(cantidad + 1)}
+          disabled={disabled}
+        >
+          <AddIcon />
+        </IconButton>
+      </Stack>
+    );
+
+  if (exists === null)
+    return (
+      <Button
+        disabled={disabled}
+        variant={"outlined"}
+        endIcon={<AddIcon />}
+        size="small"
         onClick={() =>
-          setCarrito(
-            productos?.map((i) =>
-              i.IdProducto === item && i.cantidad > 1
-                ? {
-                    ...i,
-                    cantidad: i.cantidad - 1,
-                    precio: i.precio - i.precio,
-                  }
-                : { ...i }
-            )
-          )
+          setCarrito([
+            ...carrito,
+            { ...item, cantidad: 1, precio: item?.PrecioVenta },
+          ])
         }
       >
-        <RemoveIcon />
-      </IconButton>
-      {carrito?.find((i) => i?.IdProducto === item).cantidad}
-      <IconButton
-        onClick={() =>
-          setCarrito(
-            productos?.map((i) =>
-              i.IdProducto === item
-                ? {
-                    ...i,
-                    cantidad: i.cantidad + 1,
-                    precio: i.precio + i.precio,
-                  }
-                : { ...i }
-            )
-          )
-        }
-      >
-        <AddIcon />
-      </IconButton>
-    </Stack>
-  ) : (
-    <Button
-      variant={"outlined"}
-      endIcon={<AddIcon />}
-      size="small"
-      onClick={() =>
-        setCarrito([...carrito, { IdProducto: item, cantidad: 1 }])
-      }
-    >
-      Agregar al carrito
-    </Button>
-  );
+        Agregar al carrito
+      </Button>
+    );
 };
 
 export default Counter;

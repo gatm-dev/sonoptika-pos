@@ -15,6 +15,7 @@ import SonoptikaIcon2 from "../assets/VARIANTE-LOGO-1.png";
 const NavBar = ({ menuOpen, handleMenuOpen }) => {
   const { carrito, changeScrollColor } = useContext(GlobalContext);
   const navigate = useNavigate();
+
   return (
     <AppBar
       position="sticky"

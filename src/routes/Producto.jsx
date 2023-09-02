@@ -1,15 +1,18 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Divider, Typography, Stack, Chip } from "@mui/material";
+import { Box, Divider, Typography, Stack, Chip, Button } from "@mui/material";
 import { GlobalContext } from "../context/GlobalContext";
 import SunGlasses from "../assets/1088490.svg";
 import Counter from "../components/Counter";
+import { useNavigate } from "react-router-dom";
 
 const Producto = () => {
+  const navigate = useNavigate();
   const { idProducto } = useParams();
   const [objProducto, setObjProducto] = useState({});
-  const { productos, handleGetDefArm, defArm } = useContext(GlobalContext);
+  const { productos, handleGetDefArm, defArm } =
+    useContext(GlobalContext);
 
   useEffect(() => {
     const obj = productos?.find((p) => p.Sku === idProducto);
@@ -17,7 +20,9 @@ const Producto = () => {
   }, [idProducto]);
 
   useEffect(() => {
-    if (objProducto?.IdProducto) handleGetDefArm(objProducto?.IdProducto);
+    if (objProducto?.IdProducto) {
+      handleGetDefArm(objProducto?.IdProducto);
+    }
   }, [objProducto]);
 
   if (idProducto === undefined) return <>No hay producto para mostrar</>;
@@ -41,7 +46,7 @@ const Producto = () => {
         <Box
           sx={{ maxWidth: "20vw", alignSelf: "center" }}
           component={"img"}
-          src={SunGlasses}
+          src={/*handleGetImg(objProducto?.Sku) ||*/ SunGlasses}
         />
         <Typography variant="h6">{defArm?.NombreComercial}</Typography>
         <Typography variant="body2">
@@ -61,7 +66,15 @@ const Producto = () => {
             color="primary"
           />
         </Typography>
-        <Counter item={defArm.IdProducto} />
+        <Counter item={objProducto} />
+        <Divider sx={{ my: 2 }} />
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => navigate("/checkout")}
+        >
+          Ir al carrito
+        </Button>
       </Stack>
     </>
   );
